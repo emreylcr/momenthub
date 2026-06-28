@@ -2,14 +2,13 @@ services:
   - type: web
     name: momenthub
     runtime: node
-    plan: free
     region: frankfurt
-    buildCommand: DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build npm install && npx prisma generate && npm run build
+    plan: free
+    branch: main
+    buildCommand: npm install && npx prisma migrate deploy && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
-      - key: NODE_VERSION
-        value: "20"
       - key: NODE_ENV
         value: production
       - key: AUTH_SECRET
@@ -21,7 +20,7 @@ services:
 
 databases:
   - name: momenthub-db
-    plan: free
     region: frankfurt
+    plan: free
     databaseName: momenthub
-    user: momenthub
+    user: momenthub_user

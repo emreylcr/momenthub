@@ -1,49 +1,99 @@
-# MomentHub — Render'a Deploy
+# MomentHub — GitHub + Render Deploy
 
-## Hızlı yol (Blueprint)
+## 1) GitHub'a yükle
 
-1. Projeyi GitHub'a yükle (aşağıdaki git adımları)
-2. [render.com](https://render.com) → **New** → **Blueprint**
-3. Repo'yu bağla — `render.yaml` otomatik algılanır
-4. **Apply** → Web servisi + PostgreSQL oluşturulur
-5. Deploy bitince siten `https://momenthub.onrender.com` gibi bir adreste açılır
+### İlk kez (repo zaten var: `emreylcr/momenthub`)
 
-## GitHub'a yükleme
+Proje klasöründe PowerShell:
 
-```bash
-git init
+```powershell
+cd C:\Users\yolac\OneDrive\Desktop\site
+
 git add .
-git commit -m "MomentHub - Render deploy hazır"
-git branch -M main
+git status
+git commit -m "MomentHub: üyelik, profil, yorumlar, ses odaları"
+git push origin main
+```
+
+GitHub hesabına giriş istenirse tarayıcıdan onayla veya Personal Access Token kullan.
+
+### Repo henüz yoksa
+
+1. https://github.com/new adresine git
+2. Repo adı: `momenthub` (Public veya Private)
+3. **README / .gitignore ekleme** — boş repo oluştur
+4. Sonra:
+
+```powershell
+cd C:\Users\yolac\OneDrive\Desktop\site
 git remote add origin https://github.com/KULLANICI_ADIN/momenthub.git
+git branch -M main
 git push -u origin main
 ```
 
-## Manuel kurulum (Blueprint olmadan)
+---
 
-### 1. PostgreSQL
-- Render → **New** → **PostgreSQL** (Free)
-- Ad: `momenthub-db`, Region: Frankfurt
+## 2) Render'da canlıya al
 
-### 2. Web Service
-- **New** → **Web Service** → GitHub repo
-- **Build Command:** `npm install && npx prisma generate && npx prisma migrate deploy && npm run build`
-- **Start Command:** `npm start`
-- **Environment Variables:**
-  - `DATABASE_URL` → PostgreSQL **Internal Connection String**
-  - `AUTH_SECRET` → güçlü rastgele string
-  - `NODE_ENV` → `production`
+1. https://render.com — GitHub ile giriş yap
+2. **New +** → **Web Service**
+3. **Connect repository** → `momenthub` reposunu seç
+4. Ayarlar:
+
+| Alan | Değer |
+|------|--------|
+| **Name** | momenthub |
+| **Region** | Frankfurt (veya yakın) |
+| **Branch** | main |
+| **Runtime** | Node |
+| **Build Command** | `npm install && npx prisma migrate deploy && npm run build` |
+| **Start Command** | `npm start` |
+| **Instance** | Free |
+
+5. **Environment Variables** ekle:
+
+| Key | Value |
+|-----|--------|
+| `DATABASE_URL` | `file:./data/dev.db` |
+| `AUTH_SECRET` | Uzun rastgele string (ör. https://generate-secret.vercel.app/32) |
+| `NODE_ENV` | `production` |
+
+6. **Advanced** → **Add Disk** (önemli — SQLite kalıcı olsun diye):
+   - Mount Path: `/opt/render/project/src/data`
+   - Size: 1 GB
+
+7. `DATABASE_URL` değerini diske göre ayarla:
+   ```
+   file:/opt/render/project/src/data/dev.db
+   ```
+
+8. **Create Web Service** — build bitince site `https://momenthub.onrender.com` gibi bir URL alır.
+
+---
+
+## 3) Güncelleme (her değişiklikten sonra)
+
+```powershell
+git add .
+git commit -m "Değişiklik açıklaması"
+git push origin main
+```
+
+Render otomatik yeniden deploy eder (1–5 dk).
+
+---
 
 ## Önemli notlar
 
-- **SQLite artık kullanılmıyor** — canlı ortam PostgreSQL ile çalışır
-- **Yüklenen dosyalar** (foto/video) Render'da deploy sonrası silinebilir (geçici disk). Kalıcı depolama için ileride S3/Cloudinary eklenebilir
-- **Ses odaları** Jitsi üzerinden çalışır, ekstra ayar gerekmez
-- Ücretsiz planda site 15 dk kullanılmazsa uyur; ilk ziyaret 30-60 sn sürebilir
+- `.env` dosyası GitHub'a **gitmez** (güvenlik). Secret'ları sadece Render panelinden gir.
+- Yüklenen fotoğraflar `public/uploads` altında — Render Disk kullanmazsan her deploy'da silinir.
+- Ses odaları (Jitsi) internet bağlantısı ister, tarayıcı mikrofon izni gerekir.
+- İlk üye olan kullanıcı otomatik **admin** olur.
 
-## Yerel geliştirme (PostgreSQL ile)
+---
 
-1. `.env.example` dosyasını `.env` olarak kopyala
-2. Neon.tech veya Render PostgreSQL **External URL**'ini `DATABASE_URL`'e yapıştır
-3. `npx prisma migrate deploy`
-4. `npm run dev`
+## Sorun çıkarsa
+
+- Build log: Render → Service → **Logs**
+- `AUTH_SECRET` tanımlı değilse giriş/kayıt çalışmaz
+- Veritabanı hatası: Disk mount path ile `DATABASE_URL` eşleşmeli
