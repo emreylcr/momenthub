@@ -19,8 +19,6 @@ export const metadata: Metadata = {
   description: "Oyunlardaki en iyi anlarını paylaş, toplulukla eğlen.",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function RootLayout({
   children,
 }: Readonly<{

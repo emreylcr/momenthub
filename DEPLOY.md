@@ -46,7 +46,7 @@ git push -u origin main
 | **Region** | Frankfurt (veya yakın) |
 | **Branch** | main |
 | **Runtime** | Node |
-| **Build Command** | `npm install && npx prisma migrate deploy && npm run build` |
+| **Build Command** | `npm install && npm run build` |
 | **Start Command** | `npm start` |
 | **Instance** | Free |
 

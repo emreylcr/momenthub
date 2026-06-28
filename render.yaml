@@ -2,25 +2,17 @@ services:
   - type: web
     name: momenthub
     runtime: node
-    region: frankfurt
     plan: free
-    branch: main
-    buildCommand: npm install && npx prisma migrate deploy && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /
+    disk:
+      name: momenthub-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        value: file:/opt/render/project/src/data/dev.db
       - key: AUTH_SECRET
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: momenthub-db
-          property: connectionString
-
-databases:
-  - name: momenthub-db
-    region: frankfurt
-    plan: free
-    databaseName: momenthub
-    user: momenthub_user

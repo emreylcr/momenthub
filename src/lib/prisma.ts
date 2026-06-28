@@ -1,34 +1,32 @@
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
-import { Pool } from "pg";
+import path from "path";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
   prismaClientVersion?: string;
 };
 
-const PRISMA_CLIENT_VERSION = "postgres-render-v2";
+// Şema değişince bu sürümü artır — eski önbellekli client yenilenir
+const PRISMA_CLIENT_VERSION = "voice-rooms-v1";
+
+function resolveDatabaseUrl() {
+  const raw = process.env.DATABASE_URL ?? "file:./data/dev.db";
+  const filePath = raw.replace(/^file:/, "");
+
+  const absolute = path.isAbsolute(filePath)
+    ? filePath
+    : path.join(process.cwd(), filePath);
+
+  return `file:${absolute}`;
+}
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error("DATABASE_URL ortam değişkeni tanımlı değil.");
-  }
-
-  const pool = new Pool({
-    connectionString,
-    ssl:
-      process.env.NODE_ENV === "production"
-        ? { rejectUnauthorized: false }
-        : undefined,
-  });
-
-  const adapter = new PrismaPg(pool);
+  const adapter = new PrismaBetterSqlite3({ url: resolveDatabaseUrl() });
   return new PrismaClient({ adapter });
 }
 
-function getPrismaClient(): PrismaClient {
+function getPrismaClient() {
   if (
     process.env.NODE_ENV !== "production" &&
     globalForPrisma.prismaClientVersion !== PRISMA_CLIENT_VERSION
@@ -44,13 +42,4 @@ function getPrismaClient(): PrismaClient {
   return globalForPrisma.prisma;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
-    const client = getPrismaClient();
-    const value = Reflect.get(client, prop, receiver);
-    if (typeof value === "function") {
-      return value.bind(client);
-    }
-    return value;
-  },
-});
+export const prisma = getPrismaClient();
