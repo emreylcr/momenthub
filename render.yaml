@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build npm install && npx prisma generate && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:

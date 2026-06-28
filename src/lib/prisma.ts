@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaClientVersion?: string;
 };
 
-const PRISMA_CLIENT_VERSION = "postgres-render-v1";
+const PRISMA_CLIENT_VERSION = "postgres-render-v2";
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
@@ -28,7 +28,7 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-function getPrismaClient() {
+function getPrismaClient(): PrismaClient {
   if (
     process.env.NODE_ENV !== "production" &&
     globalForPrisma.prismaClientVersion !== PRISMA_CLIENT_VERSION
@@ -44,4 +44,13 @@ function getPrismaClient() {
   return globalForPrisma.prisma;
 }
 
-export const prisma = getPrismaClient();
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, receiver);
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});

@@ -39,6 +39,10 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# deploy temp files (may contain secrets)
+.deploy-*
+.deploy-user.txt
+
 # vercel
 .vercel
 
